@@ -8,6 +8,28 @@ import streamlit.components.v1 as components
 # MÉTODOS NUMÉRICOS
 # ============================
 
+def euler_simple_con_tabla(f, x0, y0, h, n):
+    rows = []
+    x = x0
+    y = y0
+
+    rows.append([0, x, y, np.nan, np.nan, 0.0])
+
+    for i in range(1, n + 1):
+        k1 = f(x, y)
+        y_next = y + h * k1
+        err = abs(y_next - y)
+
+        rows.append([i, x, y, k1, y_next, err])
+
+        x += h
+        y = y_next
+
+    return pd.DataFrame(
+        rows,
+        columns=["i", "x", "y", "f(x,y)", "y_next", "error"]
+    )
+
 def euler_mejorado_con_tabla(f, x0, y0, h, n):
     rows = []
     x = x0
@@ -168,27 +190,61 @@ Nestor Daniel Cabrera Garcia
 
 st.title("Métodos Numéricos")
 
-tab_euler, tab_rk4, tab_newton = st.tabs(
-    ["Euler Mejorado", "Runge-Kutta 4 (RK4)", "Newton-Raphson"]
+tab_euler_simple, tab_euler, tab_rk4, tab_newton = st.tabs(
+    ["Euler Simple", "Euler Mejorado", "Runge-Kutta 4 (RK4)", "Newton-Raphson"]
 )
 
 # ============================
-# TAB EULER
+# TAB EULER SIMPLE
+# ============================
+
+with tab_euler_simple:
+    col1, col2 = st.columns(2)
+
+    with col1:
+        expr = st.text_input("f(x,y) =", value="x + y", key="euler_simple")
+        x0 = st.number_input("x0", value=0.0, key="euler_simple_x0")
+        y0 = st.number_input("y0", value=1.0, key="euler_simple_y0")
+        h = st.number_input("h (paso)", value=0.1, min_value=1e-6, key="euler_simple_h")
+        x_final = st.number_input("x_final", value=1.0, key="euler_simple_xf")
+
+    f = make_f_xy(expr)
+
+    if st.button("Resolver Euler Simple"):
+        n = steps_from_xfinal(x0, x_final, h)
+        if n <= 0:
+            st.error("x_final debe ser mayor que x0 y h positivo.")
+        else:
+            df = euler_simple_con_tabla(f, x0, y0, h, n)
+
+            fig, ax = plt.subplots()
+            ax.plot(df["x"], df["y_next"], marker="o", color="green")
+            ax.grid(True)
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+
+            with col2:
+                st.pyplot(fig)
+
+            mostrar_tabla_centrada(df)
+
+# ============================
+# TAB EULER MEJORADO
 # ============================
 
 with tab_euler:
     col1, col2 = st.columns(2)
 
     with col1:
-        expr = st.text_input("f(x,y) =", value="x + y")
-        x0 = st.number_input("x0", value=0.0)
-        y0 = st.number_input("y0", value=1.0)
-        h = st.number_input("h (paso)", value=0.1, min_value=1e-6)
-        x_final = st.number_input("x_final", value=1.0)
+        expr = st.text_input("f(x,y) =", value="x + y", key="euler_mej")
+        x0 = st.number_input("x0", value=0.0, key="euler_mej_x0")
+        y0 = st.number_input("y0", value=1.0, key="euler_mej_y0")
+        h = st.number_input("h (paso)", value=0.1, min_value=1e-6, key="euler_mej_h")
+        x_final = st.number_input("x_final", value=1.0, key="euler_mej_xf")
 
     f = make_f_xy(expr)
 
-    if st.button("Resolver Euler"):
+    if st.button("Resolver Euler Mejorado"):
         n = steps_from_xfinal(x0, x_final, h)
         if n <= 0:
             st.error("x_final debe ser mayor que x0 y h positivo.")
@@ -196,7 +252,7 @@ with tab_euler:
             df = euler_mejorado_con_tabla(f, x0, y0, h, n)
 
             fig, ax = plt.subplots()
-            ax.plot(df["x"], df["y_next"], marker="o")
+            ax.plot(df["x"], df["y_next"], marker="o", color="blue")
             ax.grid(True)
             ax.set_xlabel("x")
             ax.set_ylabel("y")
